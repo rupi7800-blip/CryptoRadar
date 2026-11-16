@@ -1,0 +1,22 @@
+{
+  "name": "Crypto Radar — Il mondo cripto, sotto controllo",
+  "short_name": "Crypto Radar",
+  "description": "Notizie, mercati, DeFi, sicurezza e analisi del mondo cripto in italiano.",
+  "lang": "it",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Mercato", "url": "/mercato" },
+    { "name": "Sicurezza", "url": "/sicurezza" },
+    { "name": "Watchlist", "url": "/watchlist" }
+  ]
+}
