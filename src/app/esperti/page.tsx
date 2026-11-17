@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ago from '@/components/Ago';
 import { Card, PageHeader, Disclaimer, Empty, TierChip } from '@/components/ui';
 import { listNews } from '@/lib/news';
 import { listSources, sourceMeta } from '@/lib/sources/registry';
@@ -43,7 +44,7 @@ export default async function Esperti({ searchParams }: { searchParams: Promise<
                 <div className="text-xs text-mute">{m.role ?? 'n.d.'} · {m.area ?? ''}</div>
                 <div className="text-xs text-mute">{e.reliability_note}</div>
                 {e.conflicts && <div className="text-xs text-warn">Possibili conflitti: {e.conflicts}</div>}
-                <div className="text-[10px] text-mute">{e.status === 'ok' ? `ultimo aggiornamento ${timeAgo(e.last_success)}` : e.status === 'error' ? `⚠ feed in errore dal ${fmtDateTime(e.last_success ?? e.last_attempt)}` : 'in attesa'}</div>
+                <div className="text-[10px] text-mute">{e.status === 'ok' ? <Ago iso={e.last_success} prefix="ultimo aggiornamento " /> : e.status === 'error' ? `⚠ feed in errore dal ${fmtDateTime(e.last_success ?? e.last_attempt)}` : 'in attesa'}</div>
               </li>
             );
           })}</ul>

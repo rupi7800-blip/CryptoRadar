@@ -1,6 +1,21 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { STATIC, dataUrl } from '@/lib/mode';
+import { addWatch } from '@/lib/local';
+
+async function searchStatic(q: string) {
+  const ql = q.toLowerCase();
+  const m = await fetch(dataUrl('market.json')).then((r) => r.json()).catch(() => ({ coins: [] }));
+  const local = (m.coins as { id: string; idSource: string; name: string; symbol: string; rank: number | null }[]).filter((c) => c.name.toLowerCase().includes(ql) || c.symbol.toLowerCase() === ql).slice(0, 8).map((c) => ({ id: c.id, src: c.idSource, name: c.name, symbol: c.symbol, rank: c.rank }));
+  if (local.length >= 3) return local;
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`).then((x) => x.json());
+    return [...local, ...(r.coins ?? []).slice(0, 10).map((c: { id: string; name: string; symbol: string; market_cap_rank: number | null }) => ({ id: c.id, src: 'coingecko', name: c.name, symbol: c.symbol.toUpperCase(), rank: c.market_cap_rank }))];
+  } catch {
+    return local;
+  }
+}
 
 type R = { id: string; src: string; name: string; symbol: string; rank: number | null };
 export default function AddCoin() {
@@ -11,13 +26,14 @@ export default function AddCoin() {
   const router = useRouter();
   const search = async () => {
     if (type !== 'coin') return add({ id: q.trim().toLowerCase(), name: q.trim() } as R);
+    if (STATIC) return setRes(await searchStatic(q));
     const r = await fetch(`/api/coins/search?q=${encodeURIComponent(q)}`);
     setRes((await r.json()).items ?? []);
   };
   const add = async (c: R) => {
     if (!c.id) return;
-    const r = await fetch('/api/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, id: c.id, label: c.name }) });
-    setMsg(r.ok ? `Aggiunto: ${c.name}` : (await r.json()).error);
+    const err = await addWatch({ type, id: c.id, label: c.name });
+    setMsg(err ?? `Aggiunto: ${c.name}`);
     setRes([]); setQ('');
     router.refresh();
   };

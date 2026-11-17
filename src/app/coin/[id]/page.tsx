@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ago from '@/components/Ago';
 import { notFound } from 'next/navigation';
 import { coinDetail } from '@/lib/market/detail';
 import { listNews } from '@/lib/news';
@@ -44,7 +45,7 @@ export default async function CoinPage({ params, searchParams }: { params: Promi
         <B l="Capitalizzazione" v={fmtUsd(m.marketCap, { compact: true })} s={<span className="text-mute">FDV {fmtUsd(m.fdv, { compact: true })}</span>} />
         <B l="Volume 24h" v={fmtUsd(m.volume24h, { compact: true })} s={<span className="text-mute">{m.volume24h && m.marketCap ? `${((m.volume24h / m.marketCap) * 100).toFixed(1)}% della cap.` : ''}</span>} />
       </div>
-      <p className="px-1 text-[11px] text-mute">Fonte: {d.source} · aggiornato {timeAgo(m.lastUpdated ?? d.fetchedAt)} · dato periodico (cache 10 min)</p>
+      <p className="px-1 text-[11px] text-mute">Fonte: {d.source} · aggiornato <Ago iso={m.lastUpdated ?? d.fetchedAt} /> · dato periodico</p>
       <Card title="Grafico prezzo"><CoinChart id={d.src === 'coingecko' ? d.id : id} symbol={d.symbol} /></Card>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Tokenomics e offerta">

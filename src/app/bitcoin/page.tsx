@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ago from '@/components/Ago';
 import { getCache } from '@/lib/db';
 import type { Coin, GlobalMarket } from '@/lib/market/types';
 import { Card, PageHeader, Pct, Freshness, Unavailable, Disclaimer, Empty } from '@/components/ui';
@@ -83,7 +84,7 @@ export default async function Bitcoin({ searchParams }: { searchParams: Promise<
         <Card title="Movimenti delle balene (≥ 100 BTC)">
           {whales.value?.items.length ? (
             <ul className="divide-y divide-line text-sm">{whales.value.items.slice(0, 10).map((w) => (
-              <li key={w.txid} className="flex items-center gap-2 px-4 py-2"><span className="font-semibold tabular-nums">{fmtNum(w.btc, 2)} BTC</span><span className="text-xs text-mute">{w.where} · {timeAgo(w.at)}</span><a href={`https://mempool.space/tx/${w.txid}`} target="_blank" rel="noopener noreferrer" className="ml-auto font-mono text-xs text-accent">{w.txid.slice(0, 10)}… ↗</a></li>
+              <li key={w.txid} className="flex items-center gap-2 px-4 py-2"><span className="font-semibold tabular-nums">{fmtNum(w.btc, 2)} BTC</span><span className="text-xs text-mute">{w.where} · <Ago iso={w.at} /></span><a href={`https://mempool.space/tx/${w.txid}`} target="_blank" rel="noopener noreferrer" className="ml-auto font-mono text-xs text-accent">{w.txid.slice(0, 10)}… ↗</a></li>
             ))}</ul>
           ) : <Empty>Nessuna transazione ≥ 100 BTC nel campione analizzato.</Empty>}
           <p className="px-4 pb-3 text-[11px] text-mute">Copertura parziale e dichiarata: {whales.value?.scope ?? 'n.d.'}. Il valore include il resto restituito al mittente: non è necessariamente un trasferimento tra soggetti diversi. Per un monitoraggio completo multi-chain serve Whale Alert (a pagamento).</p>

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { STATIC, dataUrl } from '@/lib/mode';
 
 type C = { id: string; idSource: string; symbol: string; name: string; image: string | null; price: number | null; ch24h: number | null; ch1h: number | null };
 
@@ -22,13 +23,13 @@ export default function LivePrices({ initial, fetchedAt, source }: { initial: C[
   useEffect(() => {
     const t = setInterval(async () => {
       try {
-        const r = await fetch(`/api/market?n=${initial.length}`, { cache: 'no-store' });
+        const r = await fetch(STATIC ? dataUrl('market.json') : `/api/market?n=${initial.length}`, { cache: 'no-store' });
         const j = await r.json();
-        if (j.coins?.length) { setCoins(j.coins); setMeta({ fetchedAt: j.fetchedAt, source: j.source }); }
+        if (j.coins?.length) { setCoins(STATIC ? initial.map((c) => j.coins.find((x: C) => x.id === c.id) ?? c) : j.coins); setMeta({ fetchedAt: j.fetchedAt, source: j.source }); }
       } catch { /* */ }
-    }, 60_000);
+    }, STATIC ? 300_000 : 60_000);
     return () => clearInterval(t);
-  }, [initial.length]);
+  }, [initial]);
 
   useEffect(() => {
     const syms = initial.map((c) => c.symbol.toLowerCase()).filter((s) => !['usdt', 'usdc', 'dai', 'usde', 'fdusd', 'steth', 'wbtc', 'weth', 'usds', 'wsteth', 'weeth', 'busd'].includes(s));

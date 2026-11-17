@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ago from '@/components/Ago';
 import { Card, Pct, Freshness, Empty, Disclaimer } from '@/components/ui';
 import { NewsList, NewsCard } from '@/components/NewsCard';
 import LivePrices from '@/components/LivePrices';
@@ -36,7 +37,7 @@ export default function Home() {
           <div className="mb-1 flex items-center gap-2 text-xs font-bold text-down"><span className="pulse-dot">●</span> IN EVIDENZA ORA</div>
           <ul className="space-y-1">
             {breaking.map((n) => (
-              <li key={n.id} className="text-sm"><Link href={`/notizia/${n.id}`} className="font-semibold hover:underline"><span className="t-it">{n.titleIt || n.title}</span><span className="t-orig">{n.title}</span></Link> <span className="text-xs text-mute">· {n.sourceName} · {timeAgo(n.publishedAt)} · {n.status.toLowerCase()}</span></li>
+              <li key={n.id} className="text-sm"><Link href={`/notizia/${n.id}`} className="font-semibold hover:underline"><span className="t-it">{n.titleIt || n.title}</span><span className="t-orig">{n.title}</span></Link> <span className="text-xs text-mute">· {n.sourceName} · <Ago iso={n.publishedAt} /> · {n.status.toLowerCase()}</span></li>
             ))}
           </ul>
         </section>
@@ -59,7 +60,7 @@ export default function Home() {
       </Card>
 
       {briefing.value ? (
-        <Card title={<span>✦ Briefing AI · <span className="font-normal text-mute">{briefing.value.titolo}</span></span>} right={<span className="text-[11px] text-mute">{timeAgo(briefing.fetchedAt)}</span>}>
+        <Card title={<span>✦ Briefing AI · <span className="font-normal text-mute">{briefing.value.titolo}</span></span>} right={<span className="text-[11px] text-mute"><Ago iso={briefing.fetchedAt} /></span>}>
           <div className="grid gap-4 p-4 text-sm md:grid-cols-3">
             <div className="md:col-span-2"><ul className="list-disc space-y-1 pl-5">{briefing.value.punti_chiave.map((p, i) => <li key={i}>{p}</li>)}</ul></div>
             <div className="space-y-3 text-xs">

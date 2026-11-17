@@ -1,6 +1,33 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import { STATIC } from '@/lib/mode';
+import { lsGet, lsSet } from '@/lib/local';
+
+/** Versione statica: traduzione diretta dal browser con MyMemory (gratuito, quota per utente), con cache locale. */
+async function translateDirect(texts: string[], target: string, from: string): Promise<(string | null)[]> {
+  const key = `cr_tr_${from}_${target}`;
+  const cache = lsGet<Record<string, string>>(key, {});
+  const out: (string | null)[] = texts.map((t) => cache[t] ?? null);
+  const todo = texts.map((t, i) => [t, i] as const).filter(([, i]) => out[i] == null);
+  let stop = false;
+  const worker = async () => {
+    while (todo.length && !stop) {
+      const [t, i] = todo.shift()!;
+      try {
+        const r = await fetch(`https://api.mymemory.translated.net/get?${new URLSearchParams({ q: t.slice(0, 480), langpair: `${from}|${target}` })}`);
+        const j = await r.json();
+        const tr = String(j?.responseData?.translatedText ?? '');
+        if (j.responseStatus !== 200 || !tr || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(tr)) { stop = /WARNING/i.test(tr); continue; }
+        out[i] = tr;
+        cache[t] = tr;
+      } catch { stop = true; }
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  lsSet(key, cache);
+  return out;
+}
 
 /**
  * Tasto di traduzione diretto, disponibile su tutte le pagine.
@@ -42,7 +69,11 @@ export default function LangSwitch() {
     let missing = 0;
     try {
       const map = new Map<string, string>();
-      for (let i = 0; i < unique.length; i += 60) {
+      if (STATIC) {
+        const tr = await translateDirect(unique.slice(0, 400), target, 'it');
+        unique.slice(0, 400).forEach((t, k) => { if (tr[k]) map.set(t, tr[k]!); else missing++; });
+      }
+      for (let i = 0; !STATIC && i < unique.length; i += 60) {
         const batch = unique.slice(i, i + 60);
         const r = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texts: batch, target, from: 'it' }) });
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? 'errore');

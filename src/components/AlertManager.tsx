@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { STATIC, withBase } from '@/lib/mode';
+import { getRules, setRules, evaluateClient } from '@/lib/clientAlerts';
 
 type T = Record<string, { label: string; needsTarget: boolean; needsThreshold: boolean; hint: string }>;
 type Rule = { id: number; type: string; target: string | null; threshold: number | null; cooldown_min: number; push: number; enabled: number; last_fired: string | null };
@@ -11,7 +13,7 @@ function b64ToUint8(b: string) {
 }
 
 export default function AlertManager({ types }: { types: T }) {
-  const [rules, setRules] = useState<Rule[]>([]);
+  const [rules, setRulesState] = useState<Rule[]>([]);
   const [type, setType] = useState('breaking');
   const [target, setTarget] = useState('');
   const [threshold, setThreshold] = useState('');
@@ -20,12 +22,13 @@ export default function AlertManager({ types }: { types: T }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [pushState, setPushState] = useState<'unsupported' | 'off' | 'on' | 'denied' | 'loading'>('loading');
 
-  const load = async () => setRules((await (await fetch('/api/alerts', { cache: 'no-store' })).json()).rules ?? []);
+  const load = async () => (STATIC ? setRulesState(getRules()) : setRulesState((await (await fetch('/api/alerts', { cache: 'no-store' })).json()).rules ?? []));
   useEffect(() => {
     load();
     (async () => {
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return setPushState('unsupported');
       if (Notification.permission === 'denied') return setPushState('denied');
+      if (STATIC) return setPushState(Notification.permission === 'granted' ? 'on' : 'off');
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
       setPushState(sub ? 'on' : 'off');
@@ -34,9 +37,10 @@ export default function AlertManager({ types }: { types: T }) {
 
   const enablePush = async () => {
     try {
-      const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register('/sw.js'));
+      const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register(withBase('/sw.js'), { scope: withBase('/') }));
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') return setPushState('denied');
+      if (STATIC) return setPushState('on');
       const { publicKey } = await (await fetch('/api/push/key')).json();
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(publicKey) });
       const r = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
@@ -44,6 +48,7 @@ export default function AlertManager({ types }: { types: T }) {
     } catch (e) { setMsg('Attivazione push non riuscita: ' + (e as Error).message); }
   };
   const disablePush = async () => {
+    if (STATIC) { setMsg('Per disattivarle revoca il permesso notifiche dalle impostazioni del sito nel browser.'); return; }
     const reg = await navigator.serviceWorker.getRegistration();
     const sub = await reg?.pushManager.getSubscription();
     if (sub) { await fetch('/api/push/subscribe', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
@@ -54,19 +59,31 @@ export default function AlertManager({ types }: { types: T }) {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    if (STATIC) {
+      if (t.needsTarget && !target.trim()) return setMsg('Indica l\'elemento da monitorare');
+      const th = Number(threshold.replace(',', '.'));
+      if (t.needsThreshold && !(th > 0)) return setMsg('Indica una soglia positiva');
+      const list = getRules();
+      if (list.length >= 50) return setMsg('Massimo 50 regole');
+      setRules([{ id: Date.now(), type, target: t.needsTarget ? target.trim().toLowerCase() : null, threshold: t.needsThreshold ? th : null, cooldown_min: cooldown, push: push ? 1 : 0, enabled: 1, last_fired: null }, ...list]);
+      setTarget(''); setThreshold(''); setMsg('Regola creata (salvata su questo dispositivo).');
+      load(); evaluateClient().catch(() => null);
+      return;
+    }
     const r = await fetch('/api/alerts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, target: t.needsTarget ? target.trim().toLowerCase() : null, threshold: t.needsThreshold ? Number(threshold.replace(',', '.')) : null, cooldown_min: cooldown, push }) });
     const j = await r.json();
     if (!r.ok) return setMsg(j.error);
     setTarget(''); setThreshold(''); setMsg('Regola creata.');
     load();
   };
-  const toggle = async (r: Rule) => { await fetch('/api/alerts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, enabled: !r.enabled }) }); load(); };
-  const del = async (r: Rule) => { await fetch('/api/alerts', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id }) }); load(); };
+  const toggle = async (r: Rule) => { if (STATIC) { setRules(getRules().map((x) => (x.id === r.id ? { ...x, enabled: x.enabled ? 0 : 1 } : x))); return load(); } await fetch('/api/alerts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, enabled: !r.enabled }) }); load(); };
+  const del = async (r: Rule) => { if (STATIC) { setRules(getRules().filter((x) => x.id !== r.id)); return load(); } await fetch('/api/alerts', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id }) }); load(); };
 
   return (
     <div className="space-y-4">
       <section className="card flex flex-wrap items-center gap-3 p-4 text-sm">
-        <span className="font-semibold">Notifiche push</span>
+        <span className="font-semibold">{STATIC ? 'Notifiche del browser' : 'Notifiche push'}</span>
+        {STATIC && <span className="w-full text-xs text-warn">Versione statica (GitHub Pages): gli avvisi vengono controllati sul tuo dispositivo all&apos;apertura e ogni 5 minuti <b>solo mentre l&apos;app è aperta</b>; regole e notifiche restano salvate in questo browser. Le notifiche push in background richiedono l&apos;app completa con server.</span>}
         {pushState === 'on' && <><span className="chip border-up/40 text-up">attive su questo dispositivo</span><button className="btn" onClick={disablePush}>Disattiva</button></>}
         {pushState === 'off' && <button className="btn btn-primary" onClick={enablePush}>Attiva notifiche push</button>}
         {pushState === 'denied' && <span className="text-xs text-warn">Permesso negato nel browser: riabilitalo dalle impostazioni del sito.</span>}

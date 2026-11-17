@@ -1,4 +1,5 @@
 import { getCache } from '@/lib/db';
+import Ago from '@/components/Ago';
 import type { Coin } from '@/lib/market/types';
 import { Card, PageHeader, Freshness, Empty, Disclaimer } from '@/components/ui';
 import { CoinTable } from '@/components/CoinTable';
@@ -35,7 +36,7 @@ export default async function Meme({ searchParams }: { searchParams: Promise<Rec
                   <span className="font-semibold">{t.name ?? 'Nome n.d.'}</span><span className="text-xs text-mute">{t.symbol ?? ''} · {t.chain}</span>
                   <span className={`chip ${LVL[t.risk.level]}`}>RISCHIO {t.risk.level}</span>
                   {t.boosted && <span className="chip border-warn/50 text-warn">promosso a pagamento</span>}
-                  <span className="ml-auto text-xs text-mute">{t.createdAt ? `coppia creata ${timeAgo(t.createdAt)}` : 'età n.d.'}</span>
+                  <span className="ml-auto text-xs text-mute">{t.createdAt ? <Ago iso={t.createdAt} prefix="coppia creata " /> : 'età n.d.'}</span>
                 </div>
                 <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-mute sm:grid-cols-5">
                   <span>Prezzo <b className="text-ink">{fmtUsd(t.priceUsd)}</b></span>

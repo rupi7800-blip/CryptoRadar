@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { STATIC } from '@/lib/mode';
+import { loadIndex, searchIdx } from '@/lib/staticSearch';
 
 type R = { news: { id: number; title: string; titleIt: string | null; sourceName: string }[]; coins: { id: string; src: string; name: string; symbol: string; rank: number | null }[]; sources: { id: string; name: string; category: string }[]; protocols: { slug: string; name: string; category: string }[]; exchanges: { id: string; name: string }[] };
 
@@ -17,6 +19,12 @@ export default function SearchBox() {
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       try {
+        if (STATIC) {
+          const x = searchIdx(await loadIndex(), q.trim());
+          setR({ ...x, news: x.news.slice(0, 8).map((n) => ({ id: n.id, title: n.t, titleIt: n.ti, sourceName: n.s })) });
+          setOpen(true);
+          return;
+        }
         const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, { signal: ctrl.signal });
         if (res.ok) { setR(await res.json()); setOpen(true); }
       } catch { /* annullata */ }
@@ -43,7 +51,7 @@ export default function SearchBox() {
           {!has && <div className="p-3 text-mute">Nessun risultato rapido. Premi Invio per la ricerca completa.</div>}
           {!!r?.coins.length && <Group title="Criptovalute">{r.coins.map((c) => <Item key={c.id} onClick={() => go(`/coin/${c.id}?src=${c.src}`)}>{c.name} <span className="text-mute">{c.symbol}{c.rank ? ` · #${c.rank}` : ''}</span></Item>)}</Group>}
           {!!r?.news.length && <Group title="Notizie">{r.news.slice(0, 6).map((n) => <Item key={n.id} onClick={() => go(`/notizia/${n.id}`)}>{n.titleIt || n.title} <span className="text-mute">· {n.sourceName}</span></Item>)}</Group>}
-          {!!r?.protocols.length && <Group title="Protocolli DeFi">{r.protocols.map((p) => <Item key={p.slug} onClick={() => go(`/defi?p=${p.slug}#protocolli`)}>{p.name} <span className="text-mute">{p.category}</span></Item>)}</Group>}
+          {!!r?.protocols.length && <Group title="Protocolli DeFi">{r.protocols.map((p) => <Item key={p.slug} onClick={() => go(`/defi#protocolli`)}>{p.name} <span className="text-mute">{p.category}</span></Item>)}</Group>}
           {!!r?.exchanges.length && <Group title="Exchange">{r.exchanges.map((x) => <Item key={x.id} onClick={() => go(`/exchange#classifica`)}>{x.name}</Item>)}</Group>}
           {!!r?.sources.length && <Group title="Fonti ed esperti">{r.sources.map((s) => <Item key={s.id} onClick={() => go(`/cerca?source=${s.id}`)}>{s.name} <span className="text-mute">{s.category}</span></Item>)}</Group>}
           <Link href={`/cerca?q=${encodeURIComponent(q.trim())}`} onClick={() => setOpen(false)} className="block border-t border-line px-3 py-2 text-accent">Ricerca completa con filtri →</Link>

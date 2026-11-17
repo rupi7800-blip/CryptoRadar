@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { STATIC } from '@/lib/mode';
 
 type It = { id: number; title: string; original: string; source: string; author: string | null; at: string; ago: string; url: string; coins: string[]; cats: string[]; prediction: boolean };
 export default function ComparePanel({ items, aiEnabled }: { items: It[]; aiEnabled: boolean }) {
@@ -26,7 +27,7 @@ export default function ComparePanel({ items, aiEnabled }: { items: It[]; aiEnab
           <div className="mb-2 font-semibold">Confronto di {sel.length} contributi</div>
           <div className="grid gap-2 md:grid-cols-2">{chosen.map((c) => <div key={c.id} className="rounded border border-line p-2 text-xs"><b>{c.author ?? c.source}</b> ({c.source}, {c.ago}){c.prediction && <span className="ml-1 text-warn">[previsione]</span>}<div className="text-mute">{c.title}</div></div>)}</div>
           <div className="mt-2 flex gap-2">
-            {aiEnabled ? <button className="btn btn-primary" onClick={compare} disabled={busy}>{busy ? 'Confronto…' : '✦ Confronta le posizioni con l\'AI'}</button> : <span className="text-xs text-mute">Confronto automatico AI non disponibile (nessun modello configurato): il confronto affiancato resta disponibile.</span>}
+            {aiEnabled && !STATIC ? <button className="btn btn-primary" onClick={compare} disabled={busy}>{busy ? 'Confronto…' : '✦ Confronta le posizioni con l\'AI'}</button> : <span className="text-xs text-mute">Confronto automatico AI non disponibile {STATIC ? '(versione statica: richiede l\'app con server)' : '(nessun modello configurato)'}: il confronto affiancato resta disponibile.</span>}
             <button className="btn" onClick={() => { setSel([]); setRes(null); }}>Azzera</button>
           </div>
           {err && <p className="mt-2 text-xs text-down">{err}</p>}

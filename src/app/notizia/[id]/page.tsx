@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ago from '@/components/Ago';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getArticle } from '@/lib/news';
@@ -37,7 +38,7 @@ export default async function Notizia({ params }: { params: Promise<{ id: string
         <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs text-mute">
           {n.isBreaking && <span className="chip border-down/60 bg-down/20 font-bold text-down">BREAKING</span>}
           <span className="font-medium text-ink">{n.sourceName}</span><TierChip tier={n.sourceTier} official={n.sourceOfficial} />
-          <time dateTime={n.publishedAt}>{fmtDateTime(n.publishedAt)} ({timeAgo(n.publishedAt)})</time>
+          <time dateTime={n.publishedAt}>{fmtDateTime(n.publishedAt)} (<Ago iso={n.publishedAt} />)</time>
           {n.author && <span>· di {n.author}</span>}
         </div>
         <h1 className="text-xl font-bold leading-tight sm:text-2xl"><Title n={n} /></h1>

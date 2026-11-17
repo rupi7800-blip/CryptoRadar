@@ -1,4 +1,5 @@
 import { getCache } from '@/lib/db';
+import Ago from '@/components/Ago';
 import { Card, PageHeader, Disclaimer, Freshness, Empty, StatusBadge } from '@/components/ui';
 import { SectionNews } from '@/components/SectionNews';
 import { listNews } from '@/lib/news';
@@ -67,7 +68,7 @@ function OppList({ items, empty }: { items: ReturnType<typeof listNews>; empty: 
     <ul className="divide-y divide-line">{items.map((n) => (
       <li key={n.id} className="px-4 py-2.5 text-sm">
         <Link href={`/notizia/${n.id}`} className="font-medium hover:underline"><span className="t-it">{n.titleIt || n.title}</span><span className="t-orig">{n.title}</span></Link>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-mute"><StatusBadge status={n.status} compact />{n.flags.includes('rumor') && <span className="chip border-warn/40 text-warn">rumor</span>}<span>{n.sourceName} · {timeAgo(n.publishedAt)}</span>{n.coins.length > 0 && <span>· {n.coins.join(', ')}</span>}<a className="ml-auto text-accent" href={n.url} target="_blank" rel="noopener noreferrer nofollow">fonte originale ↗</a></div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-mute"><StatusBadge status={n.status} compact />{n.flags.includes('rumor') && <span className="chip border-warn/40 text-warn">rumor</span>}<span>{n.sourceName} · <Ago iso={n.publishedAt} /></span>{n.coins.length > 0 && <span>· {n.coins.join(', ')}</span>}<a className="ml-auto text-accent" href={n.url} target="_blank" rel="noopener noreferrer nofollow">fonte originale ↗</a></div>
       </li>))}</ul>
   );
 }

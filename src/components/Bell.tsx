@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { STATIC } from '@/lib/mode';
+import { getEvents, setEvents } from '@/lib/clientAlerts';
 
 type Ev = { id: number; title: string; body: string | null; url: string | null; read: number; created_at: string };
 export default function Bell() {
@@ -8,6 +10,7 @@ export default function Bell() {
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const load = async () => {
+    if (STATIC) { const e = getEvents(); setItems(e); setUnread(e.filter((x) => !x.read).length); return; }
     try {
       const r = await fetch('/api/alerts/events', { cache: 'no-store' });
       const j = await r.json();
@@ -15,8 +18,14 @@ export default function Bell() {
       setUnread(j.unread ?? 0);
     } catch { /* offline */ }
   };
-  useEffect(() => { load(); const t = setInterval(load, 60_000); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 60_000);
+    window.addEventListener('cr-events', load);
+    return () => { clearInterval(t); window.removeEventListener('cr-events', load); };
+  }, []);
   const markAll = async () => {
+    if (STATIC) { setEvents(getEvents().map((e) => ({ ...e, read: 1 }))); return; }
     await fetch('/api/alerts/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) });
     load();
   };

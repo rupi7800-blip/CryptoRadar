@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { STATIC } from '@/lib/mode';
 
 type A = Record<string, any>;
 const LIST_SECTIONS: [string, string, string][] = [
@@ -30,7 +31,9 @@ export default function AiPanel({ clusterId, initial, available, disclaimer }: {
   if (!a) {
     return (
       <div className="p-4 text-sm">
-        {available ? (
+        {STATIC ? (
+          <p className="text-mute">Nella versione statica (GitHub Pages) le analisi AI vengono generate automaticamente solo per gli eventi più importanti a ogni aggiornamento. Per questo evento non è ancora disponibile; l&apos;analisi su richiesta richiede l&apos;app completa con server.</p>
+        ) : available ? (
           <>
             <p className="mb-3 text-mute">Genera la scheda di approfondimento: riassunto, cosa è successo, perché è importante, soggetti e criptovalute coinvolte, conseguenze possibili, elementi incerti, con separazione tra fatti, dichiarazioni, indiscrezioni e interpretazione.</p>
             <button className="btn btn-primary" onClick={run} disabled={busy}>{busy ? 'Analisi in corso…' : '✦ Genera analisi AI'}</button>

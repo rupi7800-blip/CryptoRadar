@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { withBase } from '@/lib/mode';
 
 type BIPEvent = Event & { prompt: () => Promise<void> };
 export default function Pwa() {
   const [evt, setEvt] = useState<BIPEvent | null>(null);
   const [offline, setOffline] = useState(false);
   useEffect(() => {
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => null);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register(withBase('/sw.js'), { scope: withBase('/') }).catch(() => null);
     const h = (e: Event) => { e.preventDefault(); setEvt(e as BIPEvent); };
     window.addEventListener('beforeinstallprompt', h);
     const on = () => setOffline(!navigator.onLine);

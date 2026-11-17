@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { STATIC, dataUrl } from '@/lib/mode';
 
 type T = { id: number; title: string; original: string; translated: boolean; source: string; at: string; cat: string | null; breaking: boolean; urgent: boolean; status: string; url: string; sources: number };
 const CAT: Record<string, string> = { bitcoin: 'BTC', altcoin: 'ALT', meme: 'MEME', defi: 'DEFI', exchange: 'EXCH', staking: 'STAKE', tech: 'TECH', regulation: 'REG', airdrop: 'AIRDROP', experts: 'ANALISI', security: 'SICUREZZA' };
@@ -18,7 +19,7 @@ export default function Ticker() {
     let alive = true;
     const load = async () => {
       try {
-        const r = await fetch('/api/ticker', { cache: 'no-store' });
+        const r = await fetch(STATIC ? dataUrl('ticker.json') : '/api/ticker', { cache: 'no-store' });
         const j = await r.json();
         if (alive) { setItems(j.items ?? []); setUpdated(j.generatedAt); setErr(false); }
       } catch { if (alive) setErr(true); }

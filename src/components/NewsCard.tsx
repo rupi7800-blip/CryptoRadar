@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ago from '@/components/Ago';
 import type { NewsItem } from '@/lib/news';
 import { StatusBadge, TierChip, CatChip } from './ui';
 import { timeAgo, fmtDateTime } from '@/lib/text';
@@ -32,7 +33,7 @@ export function NewsCard({ n, compact = false, showExcerpt = true }: { n: NewsIt
         {n.flags.filter((f) => FLAG_LABEL[f] && !(f === 'urgent' && n.isBreaking)).map((f) => <span key={f} className={`chip ${FLAG_LABEL[f][1]}`}>{FLAG_LABEL[f][0]}</span>)}
         <span className="font-medium text-ink/80">{n.sourceName}</span>
         <TierChip tier={n.sourceTier} official={n.sourceOfficial} />
-        <time dateTime={n.publishedAt} title={fmtDateTime(n.publishedAt)}>{timeAgo(n.publishedAt)}</time>
+        <Ago iso={n.publishedAt} />
         {n.clusterSize > 1 && <span className="chip border-line text-mute" title="Articoli sullo stesso evento">{n.clusterSize} articoli · {n.groups} fonti</span>}
       </div>
       <Link href={`/notizia/${n.id}`} className={`block font-semibold leading-snug group-hover:text-white ${compact ? 'text-sm' : 'text-[15px]'}`}>

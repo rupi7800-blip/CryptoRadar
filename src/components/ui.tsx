@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { STATUS_STYLE, SECTION_LABEL } from '@/lib/sections';
-import { fmtPct, timeAgo, fmtDateTime } from '@/lib/text';
+import { fmtPct } from '@/lib/text';
 import type { ReactNode } from 'react';
+import FreshnessClient from './FreshnessClient';
+import { STATIC, UPDATE_EVERY_MIN } from '@/lib/mode';
 
 export function Card({ title, right, children, className = '', id }: { title?: ReactNode; right?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
@@ -47,19 +49,10 @@ export function TierChip({ tier, official }: { tier: string; official?: boolean 
   return <span className={`chip ${map[tier] ?? ''}`}>{lbl[tier] ?? tier}</span>;
 }
 
-/** Indicatore di freschezza: mai presentare un dato periodico come "tempo reale". */
-export function Freshness({ fetchedAt, source, error, everySec, label = 'Aggiornato' }: { fetchedAt: string | null; source: string | null; error?: string | null; everySec: number; label?: string }) {
-  if (!fetchedAt) {
-    return <span className="text-[11px] text-warn">{error ? `Dato non disponibile: ${error.slice(0, 140)}` : 'In attesa del primo aggiornamento…'}</span>;
-  }
-  const age = (Date.now() - Date.parse(fetchedAt)) / 1000;
-  const stale = age > everySec * 3 + 120;
-  return (
-    <span className={`text-[11px] ${stale ? 'text-warn' : 'text-mute'}`} title={`${fmtDateTime(fetchedAt)}${error ? '\nUltimo errore: ' + error : ''}`}>
-      {stale ? '⚠ Dato NON aggiornato · ' : ''}
-      {label} {timeAgo(fetchedAt)} · Fonte: {source ?? 'n.d.'} · periodico (ogni {everySec >= 3600 ? `${Math.round(everySec / 3600)} h` : `${Math.round(everySec / 60)} min`})
-    </span>
-  );
+/** Indicatore di freschezza: mai presentare un dato periodico come "tempo reale". Calcolato nel browser. */
+export function Freshness(p: { fetchedAt: string | null; source: string | null; error?: string | null; everySec: number; label?: string }) {
+  // nella versione statica i dati vengono aggiornati da GitHub Actions: tolleranza pari all'intervallo di pubblicazione
+  return <FreshnessClient {...p} grace={STATIC ? UPDATE_EVERY_MIN * 60 * 2 : 0} />;
 }
 
 export function Empty({ children }: { children: ReactNode }) {
