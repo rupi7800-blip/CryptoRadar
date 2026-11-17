@@ -2,6 +2,7 @@ import { getCache } from '@/lib/db';
 import { Card, PageHeader, Freshness, Empty, Disclaimer } from '@/components/ui';
 import { SectionNews } from '@/components/SectionNews';
 import { fmtUsd } from '@/lib/text';
+import Tabs from '@/components/Tabs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Staking e rendimenti' };
@@ -25,9 +26,8 @@ const NATIVE: { chain: string; lock: string; unlock: string; req: string; slashi
 export default async function Staking({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const sp = await searchParams;
   const y = getCache<Pool[]>('yields:staking');
-  const chain = sp.chain;
-  const pools = (y.value ?? []).filter((p) => !chain || p.chain === chain);
-  const chains = [...new Set((y.value ?? []).map((p) => p.chain))].slice(0, 12);
+  const all = y.value ?? [];
+  const chains = [...new Set(all.map((p) => p.chain))].slice(0, 12);
   return (
     <div className="space-y-4">
       <PageHeader title="Staking e rendimenti" desc="Rendimenti verificati on-chain, tipologia del rendimento e rischi" color="#22c55e" />
@@ -35,11 +35,22 @@ export default async function Staking({ searchParams }: { searchParams: Promise<
         <b className="text-warn">Come leggere i rendimenti.</b> Tutti i valori sono <b>variabili</b> e calcolati sul passato: non sono garantiti. <b>APY base</b> = rendimento generato dal protocollo (ricompense di staking/commissioni). <b>APY incentivi</b> = token distribuiti come premio: <b>promozionale</b>, può terminare in qualsiasi momento ed è pagato in token il cui prezzo può crollare. L&apos;<b>APR</b> mostrato è una <b>stima</b> convertita dall&apos;APY (capitalizzazione giornaliera). Il rendimento percentuale è espresso nel token in staking: il <b>rendimento effettivo</b> in euro dipende dal prezzo del token, dalle commissioni e dalle tasse. Nessun rendimento è garantito contrattualmente da questa pagina.
       </div>
       <Card title="Liquid staking e restaking — pool principali" right={<Freshness fetchedAt={y.fetchedAt} source={y.source} error={y.error} everySec={3600} />}>
-        <div className="scroll-x flex gap-1 px-4 pt-3 text-[11px]">
-          <a href="/staking" className={`chip ${!chain ? 'border-accent/50 text-accent' : 'border-line text-mute'}`}>Tutte</a>
-          {chains.map((c) => <a key={c} href={`/staking?chain=${encodeURIComponent(c)}`} className={`chip ${chain === c ? 'border-accent/50 text-accent' : 'border-line text-mute'}`}>{c}</a>)}
-        </div>
-        {pools.length ? (
+        {all.length ? <Tabs id="chain" tabs={['Tutte', ...chains]} panels={[all, ...chains.map((c) => all.filter((p) => p.chain === c))].map((pools, k) => <PoolTable key={k} pools={pools} />)} /> : <Empty>{y.error ? `Non disponibile: ${y.error.slice(0, 160)}` : 'In caricamento…'}</Empty>}
+        <p className="border-t border-line px-4 py-2 text-[11px] text-mute">Fonte: DefiLlama Yields (pool con TVL &gt; 1 Mln $). Periodo di blocco: i token di liquid staking sono scambiabili, ma il riscatto diretto segue la coda del protocollo sottostante. Requisiti e commissioni specifici della piattaforma: verificare sul sito ufficiale (link sul nome). Rendimenti di exchange centralizzati (Earn) non mostrati: non esiste una fonte gratuita verificabile e includono rischio di controparte dell&apos;exchange.</p>
+      </Card>
+      <Card title="Staking nativo — regole di protocollo">
+        <div className="overflow-x-auto"><table className="tbl min-w-[860px]"><thead><tr><th>Blockchain</th><th>Periodo di blocco</th><th>Sblocco</th><th>Requisiti</th><th>Slashing</th><th>Documentazione</th></tr></thead>
+          <tbody>{NATIVE.map((n) => <tr key={n.chain}><td className="font-medium">{n.chain}</td><td className="text-xs">{n.lock}</td><td className="text-xs">{n.unlock}</td><td className="text-xs text-mute">{n.req}</td><td className="text-xs">{n.slashing}</td><td><a className="text-xs text-accent" href={n.doc} target="_blank" rel="noopener noreferrer">ufficiale ↗</a></td></tr>)}</tbody></table></div>
+        <p className="border-t border-line px-4 py-2 text-[11px] text-mute">Regole di protocollo compilate dalla redazione (revisione: novembre 2026). Possono cambiare con gli aggiornamenti di rete: verifica sempre la documentazione ufficiale. Gli APY dello staking nativo variano con la partecipazione complessiva e non sono mostrati senza una fonte verificata.</p>
+      </Card>
+      <SectionNews title="Notizie su staking, validatori e restaking" filter={{ section: 'staking' }} sp={sp} basePath="/staking" />
+      <Disclaimer />
+    </div>
+  );
+}
+
+function PoolTable({ pools }: { pools: Pool[] }) {
+  return (
           <div className="overflow-x-auto"><table className="tbl min-w-[980px]">
             <thead><tr><th>Cripto</th><th>Piattaforma</th><th>Chain</th><th className="text-right">APY totale</th><th className="text-right">APY base</th><th className="text-right">APY incentivi</th><th className="text-right">APR (stima)</th><th className="text-right">Media 30g</th><th className="text-right">TVL</th><th>Tipo rendimento</th><th>Rischi principali</th></tr></thead>
             <tbody>{pools.slice(0, 50).map((p) => {
@@ -63,16 +74,5 @@ export default async function Staking({ searchParams }: { searchParams: Promise<
               );
             })}</tbody>
           </table></div>
-        ) : <Empty>{y.error ? `Non disponibile: ${y.error.slice(0, 160)}` : 'In caricamento…'}</Empty>}
-        <p className="border-t border-line px-4 py-2 text-[11px] text-mute">Fonte: DefiLlama Yields (pool con TVL &gt; 1 Mln $). Periodo di blocco: i token di liquid staking sono scambiabili, ma il riscatto diretto segue la coda del protocollo sottostante. Requisiti e commissioni specifici della piattaforma: verificare sul sito ufficiale (link sul nome). Rendimenti di exchange centralizzati (Earn) non mostrati: non esiste una fonte gratuita verificabile e includono rischio di controparte dell&apos;exchange.</p>
-      </Card>
-      <Card title="Staking nativo — regole di protocollo">
-        <div className="overflow-x-auto"><table className="tbl min-w-[860px]"><thead><tr><th>Blockchain</th><th>Periodo di blocco</th><th>Sblocco</th><th>Requisiti</th><th>Slashing</th><th>Documentazione</th></tr></thead>
-          <tbody>{NATIVE.map((n) => <tr key={n.chain}><td className="font-medium">{n.chain}</td><td className="text-xs">{n.lock}</td><td className="text-xs">{n.unlock}</td><td className="text-xs text-mute">{n.req}</td><td className="text-xs">{n.slashing}</td><td><a className="text-xs text-accent" href={n.doc} target="_blank" rel="noopener noreferrer">ufficiale ↗</a></td></tr>)}</tbody></table></div>
-        <p className="border-t border-line px-4 py-2 text-[11px] text-mute">Regole di protocollo compilate dalla redazione (revisione: novembre 2026). Possono cambiare con gli aggiornamenti di rete: verifica sempre la documentazione ufficiale. Gli APY dello staking nativo variano con la partecipazione complessiva e non sono mostrati senza una fonte verificata.</p>
-      </Card>
-      <SectionNews title="Notizie su staking, validatori e restaking" filter={{ section: 'staking' }} sp={sp} basePath="/staking" />
-      <Disclaimer />
-    </div>
-  );
+        );
 }

@@ -10,6 +10,7 @@ import { getCache } from '@/lib/db';
 import { fmtUsd, fmtPct, timeAgo } from '@/lib/text';
 import { SECTION_LABEL } from '@/lib/sections';
 import { aiAvailable, DISCLAIMER } from '@/lib/ai';
+import { STATIC } from '@/lib/mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,8 +115,8 @@ export default function Home() {
           <Card title="Aggiornamenti ufficiali">
             {official.length ? official.map((n) => <NewsCard key={n.id} n={n} compact />) : <Empty>Nessun aggiornamento ufficiale recente.</Empty>}
           </Card>
-          <Card title="Più lette su Crypto Radar">{read.length ? read.map((n) => <NewsCard key={n.id} n={n} compact />) : <Empty>Ancora nessuna lettura registrata.</Empty>}</Card>
-          <Card title="Più condivise su Crypto Radar">{shared.length ? shared.map((n) => <NewsCard key={n.id} n={n} compact />) : <Empty>Ancora nessuna condivisione registrata.</Empty>}</Card>
+          {!STATIC && <Card title="Più lette su Crypto Radar">{read.length ? read.map((n) => <NewsCard key={n.id} n={n} compact />) : <Empty>Ancora nessuna lettura registrata.</Empty>}</Card>}
+          {!STATIC && <Card title="Più condivise su Crypto Radar">{shared.length ? shared.map((n) => <NewsCard key={n.id} n={n} compact />) : <Empty>Ancora nessuna condivisione registrata.</Empty>}</Card>}
         </div>
       </div>
       <Disclaimer />

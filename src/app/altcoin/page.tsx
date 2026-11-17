@@ -6,6 +6,7 @@ import { CoinTable } from '@/components/CoinTable';
 import { SectionNews } from '@/components/SectionNews';
 import { fmtUsd } from '@/lib/text';
 import { isStable } from '@/lib/market/derived';
+import Tabs from '@/components/Tabs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Altcoin' };
@@ -20,8 +21,6 @@ export default async function Altcoin({ searchParams }: { searchParams: Promise<
   const all = (top.value ?? []).filter((c) => !['bitcoin', 'btc-bitcoin'].includes(c.id) && !isStable(c));
   const majors = all.filter((c) => MAJORS.includes(c.id) || MAJORS_CP.includes(c.id));
   const cats = getCache<{ id: string; name: string; marketCap: number | null; ch24h: number | null; volume24h: number | null }[]>('market:categories');
-  const tab = CAPS.findIndex(([l]) => l.startsWith(sp.cap ?? '')) >= 0 && sp.cap ? CAPS.findIndex(([l]) => l.startsWith(sp.cap)) : -1;
-  const capList = tab >= 0 ? all.filter((c) => (c.marketCap ?? 0) >= CAPS[tab][1] && (c.marketCap ?? 0) < CAPS[tab][2]).slice(0, 50) : [];
   return (
     <div className="space-y-4">
       <PageHeader title="Altcoin" desc="Ethereum, Solana, XRP, BNB, Cardano, Avalanche, Chainlink, Polkadot, Sui, TON e gli altri progetti rilevanti" color="#8b5cf6">
@@ -30,8 +29,8 @@ export default async function Altcoin({ searchParams }: { searchParams: Promise<
       <Card title="Principali altcoin" right={<Freshness fetchedAt={top.fetchedAt} source={top.source} error={top.error} everySec={180} />}>
         {majors.length ? <CoinTable coins={majors} /> : <Empty>Dati di mercato non ancora disponibili.</Empty>}
       </Card>
-      <Card title="Per capitalizzazione" right={<div className="flex gap-1">{CAPS.map(([l], i) => <Link key={l} href={`/altcoin?cap=${encodeURIComponent(l.split(' ')[0])}`} className={`chip ${tab === i ? 'border-accent/50 text-accent' : 'border-line text-mute'}`}>{l.split(' (')[0]}</Link>)}</div>}>
-        {tab >= 0 ? <CoinTable coins={capList} dense /> : <Empty>Seleziona una fascia di capitalizzazione. Stablecoin escluse.</Empty>}
+      <Card title="Per capitalizzazione (stablecoin escluse)">
+        <Tabs id="cap" tabs={CAPS.map(([l]) => l)} panels={CAPS.map(([l, lo, hi]) => <CoinTable key={l} coins={all.filter((c) => (c.marketCap ?? 0) >= lo && (c.marketCap ?? 0) < hi).slice(0, 50)} dense />)} />
       </Card>
       <Card title="Settori (per capitalizzazione)" right={<Freshness fetchedAt={cats.fetchedAt} source={cats.source} error={cats.error} everySec={3600} />}>
         {cats.value?.length ? (

@@ -11,6 +11,7 @@ import { PageHeader, Card } from '@/components/ui';
 import AdminLogin from '@/components/admin/AdminLogin';
 import AdminPanel from '@/components/admin/AdminPanel';
 import { timeAgo } from '@/lib/text';
+import { STATIC } from '@/lib/mode';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Amministrazione', robots: { index: false } };
@@ -31,6 +32,25 @@ const ENV_KEYS: [string, string, string][] = [
 const since24 = () => new Date(Date.now() - 86400e3).toISOString().replace('T', ' ').slice(0, 19);
 
 export default async function Admin() {
+  if (STATIC) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <PageHeader title="Amministrazione" desc="Versione statica (GitHub Pages)" />
+        <Card title="Pannello non disponibile in questa versione">
+          <div className="space-y-2 p-4 text-sm text-mute">
+            <p>Il sito pubblicato su GitHub Pages è statico: non ha un server con cui gestire impostazioni o accessi. La configurazione si fa direttamente nel repository GitHub:</p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li><b>Fonti</b>: file <code>src/lib/sources/catalog.ts</code> (aggiungi, modifica o imposta <code>enabled: false</code>).</li>
+              <li><b>Chiavi API</b> (AI, CoinGecko, FRED…): Settings → Secrets and variables → Actions.</li>
+              <li><b>Frequenza di aggiornamento</b>: file <code>.github/workflows/pages.yml</code> (riga <code>cron</code>).</li>
+              <li><b>Stato delle fonti</b>: pagina <a className="text-accent" href="../fonti/">Fonti</a>; log di ogni aggiornamento nella scheda Actions del repository.</li>
+            </ul>
+            <p>Il pannello completo è disponibile nella versione con server (vedi README → Deploy completo).</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   if (!adminConfigured()) {
     return (
       <div className="mx-auto max-w-xl space-y-4">

@@ -13,6 +13,7 @@ import { translatePendingArticles } from './translate';
 import { aiAvailable, aiConfig } from './ai';
 import { autoAnalyzeTop, dailyBriefing } from './ai/tasks';
 import { evaluateAlerts } from './alerts';
+import { prefetchCoinDetails } from './market/detail';
 
 type Job = { id: string; label: string; every: number; dataSource?: string; enabled?: () => boolean; fn: () => Promise<number | unknown> };
 
@@ -40,6 +41,7 @@ export const JOBS: Job[] = [
   { id: 'ai_auto', label: 'Analisi AI eventi principali', every: 1800, enabled: () => aiAvailable() && aiConfig().features.analyze, fn: () => autoAnalyzeTop(aiConfig().features.autoAnalyzeTop) },
   { id: 'briefing', label: 'Briefing AI', every: 3600, enabled: () => aiAvailable() && aiConfig().features.briefing, fn: () => dailyBriefing() },
   { id: 'alerts', label: 'Valutazione alert', every: 60, fn: async () => evaluateAlerts() },
+  { id: 'coindetails', label: 'Schede coin (versione statica)', every: 6 * 3600, enabled: () => process.env.STATIC_INGEST === '1', fn: () => prefetchCoinDetails(20) },
   { id: 'maintenance', label: 'Pulizia log e backup', every: 86400, fn: async () => maintenance() },
 ];
 

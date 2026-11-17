@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { STATIC } from '@/lib/mode';
+import CercaStatic from '@/components/CercaStatic';
 import { Card, PageHeader, Empty } from '@/components/ui';
 import { NewsList } from '@/components/NewsCard';
 import { listNews } from '@/lib/news';
@@ -14,6 +16,7 @@ const clean = (s: string | undefined, n = 120) => (s ?? '').slice(0, n);
 const isDate = (s: string | undefined) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 export default async function Cerca({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  if (STATIC) return (<div className="space-y-4"><PageHeader title="Ricerca globale" desc="Criptovalute, notizie, fonti, protocolli ed exchange (indice degli ultimi giorni)" /><CercaStatic /></div>);
   const sp = await searchParams;
   const q = clean(sp.q).trim();
   const section = SECTIONS.some((s) => s.id === sp.section) ? sp.section : undefined;

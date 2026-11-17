@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { getCache } from '@/lib/db';
+import Tabs from '@/components/Tabs';
 import { Card, PageHeader, Freshness, Pct, Empty, Disclaimer } from '@/components/ui';
 import { BarList } from '@/components/Charts';
 import { SectionNews } from '@/components/SectionNews';
@@ -20,8 +22,8 @@ export default async function Defi({ searchParams }: { searchParams: Promise<Rec
   const stables = getCache<{ name: string; symbol: string; mechanism: string; circulating: number; prevWeek: number | null; price: number | null }[]>('defi:stablecoins');
   const hacks = getCache<{ name: string; date: string; amount: number | null; chains: string[]; technique: string | null; returned: number | null; source: string | null }[]>('defi:hacks');
   const totalTvl = (chains.value ?? []).reduce((s, c) => s + c.tvl, 0);
-  const cat = sp.cat;
-  const plist = (prot.value ?? []).filter((p) => !cat || p.category === cat).filter((p) => !sp.p || p.slug === sp.p || true).slice(0, 40);
+  const all = prot.value ?? [];
+  const topCats = (cats.value ?? []).slice(0, 10).map((c) => c.name);
   return (
     <div className="space-y-4">
       <PageHeader title="DeFi — Finanza decentralizzata" desc="Lending, DEX, liquid staking, restaking, stablecoin, rischi ed exploit" color="#06b6d4" />
@@ -31,21 +33,11 @@ export default async function Defi({ searchParams }: { searchParams: Promise<Rec
         <S l="Stablecoin in circolazione (top 20)" v={fmtUsd((stables.value ?? []).reduce((s, x) => s + x.circulating, 0), { compact: true })} />
       </div>
       <div className="px-1"><Freshness fetchedAt={prot.fetchedAt} source={prot.source} error={prot.error} everySec={900} /></div>
-      <Card id="protocolli" title={`Protocolli per TVL${cat ? ` — ${cat}` : ''}`} right={cat ? <a href="/defi#protocolli" className="text-xs text-accent">rimuovi filtro</a> : null}>
-        {plist.length ? (
-          <div className="overflow-x-auto"><table className="tbl min-w-[640px]"><thead><tr><th></th><th>Protocollo</th><th>Categoria</th><th>Chain</th><th className="text-right">TVL</th><th className="text-right">1g</th><th className="text-right">7g</th></tr></thead>
-            <tbody>{plist.map((p) => (
-              <tr key={p.slug} className={sp.p === p.slug ? 'bg-accent/10' : ''}>
-                <td><WatchButton type="project" id={p.slug} label={p.name} small /></td>
-                <td>{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium hover:underline">{p.name}</a> : p.name} {p.symbol && <span className="text-xs text-mute">{p.symbol}</span>}</td>
-                <td><a href={`/defi?cat=${encodeURIComponent(p.category)}#protocolli`} className="text-xs text-mute hover:text-ink">{p.category}</a></td>
-                <td className="text-xs text-mute">{p.chains.slice(0, 3).join(', ')}{p.chains.length > 3 ? '…' : ''}</td>
-                <td className="text-right tabular-nums">{fmtUsd(p.tvl, { compact: true })}</td><td className="text-right"><Pct v={p.ch1d} /></td><td className="text-right"><Pct v={p.ch7d} /></td>
-              </tr>))}</tbody></table></div>
-        ) : <Empty>{prot.error ? `Non disponibile: ${prot.error}` : 'In caricamento…'}</Empty>}
+      <Card id="protocolli" title="Protocolli per TVL">
+        {topCats.length ? <Tabs id="protocolli" tabs={['Tutti', ...topCats]} panels={[all.slice(0, 40), ...topCats.map((c) => all.filter((p) => p.category === c).slice(0, 30))].map((l, k) => <ProtoTable key={k} list={l} />)} /> : <Empty>{prot.error ? `Non disponibile: ${prot.error}` : 'In caricamento…'}</Empty>}
       </Card>
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card title="TVL per categoria"><BarList items={(cats.value ?? []).slice(0, 12).map((c) => ({ label: c.name, value: c.tvl, sub: `${c.n} protocolli`, href: `/defi?cat=${encodeURIComponent(c.name)}#protocolli` }))} format={(n) => fmtUsd(n, { compact: true })} /></Card>
+        <Card title="TVL per categoria"><BarList items={(cats.value ?? []).slice(0, 12).map((c) => ({ label: c.name, value: c.tvl, sub: `${c.n} protocolli`, href: `#protocolli-${encodeURIComponent(c.name)}` }))} format={(n) => fmtUsd(n, { compact: true })} /></Card>
         <Card title="TVL per blockchain"><BarList items={(chains.value ?? []).slice(0, 12).map((c) => ({ label: c.name, value: c.tvl }))} format={(n) => fmtUsd(n, { compact: true })} /></Card>
         <Card title="DEX per volume 24h">
           <ul className="divide-y divide-line text-sm">{(dex.value?.top ?? []).slice(0, 10).map((d) => <li key={d.name} className="flex justify-between gap-2 px-4 py-2"><span className="truncate">{d.name}</span><span className="tabular-nums">{fmtUsd(d.total24h, { compact: true })} <Pct v={d.change1d} className="text-xs" /></span></li>)}</ul>
@@ -61,7 +53,7 @@ export default async function Defi({ searchParams }: { searchParams: Promise<Rec
             })}</tbody></table></div>
         ) : <Empty>{stables.error ? `Non disponibile: ${stables.error.slice(0, 120)}` : 'In caricamento…'}</Empty>}
       </Card>
-      <Card title="Exploit e hack recenti (DefiLlama)" right={<a href="/sicurezza" className="text-xs text-accent">Sicurezza →</a>}>
+      <Card title="Exploit e hack recenti (DefiLlama)" right={<Link href="/sicurezza" className="text-xs text-accent">Sicurezza →</Link>}>
         <HackList items={(hacks.value ?? []).slice(0, 10)} />
       </Card>
       <SectionNews title="Notizie DeFi" filter={{ section: 'defi' }} sp={sp} basePath="/defi" />
@@ -71,4 +63,18 @@ export default async function Defi({ searchParams }: { searchParams: Promise<Rec
 }
 function S({ l, v, sub }: { l: string; v: string; sub?: React.ReactNode }) {
   return <div className="card px-4 py-3"><div className="text-xs text-mute">{l}</div><div className="text-xl font-bold tabular-nums">{v}</div>{sub && <div className="text-xs">{sub}</div>}</div>;
+}
+
+function ProtoTable({ list }: { list: P[] }) {
+  return (
+    <div className="overflow-x-auto"><table className="tbl min-w-[640px]"><thead><tr><th></th><th>Protocollo</th><th>Categoria</th><th>Chain</th><th className="text-right">TVL</th><th className="text-right">1g</th><th className="text-right">7g</th></tr></thead>
+      <tbody>{list.map((p) => (
+        <tr key={p.slug}>
+          <td><WatchButton type="project" id={p.slug} label={p.name} small /></td>
+          <td>{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium hover:underline">{p.name}</a> : p.name} {p.symbol && <span className="text-xs text-mute">{p.symbol}</span>}</td>
+          <td className="text-xs text-mute">{p.category}</td>
+          <td className="text-xs text-mute">{p.chains.slice(0, 3).join(', ')}{p.chains.length > 3 ? '…' : ''}</td>
+          <td className="text-right tabular-nums">{fmtUsd(p.tvl, { compact: true })}</td><td className="text-right"><Pct v={p.ch1d} /></td><td className="text-right"><Pct v={p.ch7d} /></td>
+        </tr>))}</tbody></table></div>
+  );
 }

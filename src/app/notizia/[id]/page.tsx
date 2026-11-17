@@ -12,10 +12,17 @@ import ShareButton from '@/components/ShareButton';
 import WatchButton from '@/components/WatchButton';
 import AdminOverride from '@/components/AdminOverride';
 import { isAdmin } from '@/lib/auth';
+import { all } from '@/lib/db';
 import { fmtDateTime, timeAgo } from '@/lib/text';
 import { STATUS_STYLE } from '@/lib/sections';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateStaticParams() {
+  if (process.env.STATIC_EXPORT !== '1') return [];
+  const days = Number(process.env.STATIC_DAYS || 7);
+  return all<{ id: number }>('SELECT id FROM articles WHERE published_at >= ?', new Date(Date.now() - days * 86400e3).toISOString()).map((r) => ({ id: String(r.id) }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const a = getArticle(Number((await params).id));
@@ -29,7 +36,7 @@ export default async function Notizia({ params }: { params: Promise<{ id: string
   if (!a) notFound();
   const { item: n, members, history, cluster } = a;
   const analysis = getAnalysis(n.id) ?? members.map((m) => getAnalysis(m.id)).find(Boolean) ?? null;
-  const admin = await isAdmin();
+  const admin = process.env.STATIC_EXPORT === '1' ? false : await isAdmin();
   const st = STATUS_STYLE[n.status] ?? STATUS_STYLE['NON VERIFICATA'];
   return (
     <div className="mx-auto max-w-4xl space-y-4">

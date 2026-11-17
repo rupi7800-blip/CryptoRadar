@@ -28,6 +28,41 @@ Per installarla come app: aprila dal telefono (in HTTPS) e scegli "Installa" / "
 
 ---
 
+## 1-bis. Due modi di farla funzionare da GitHub
+
+Lo stesso codice produce due versioni.
+
+### A) Versione statica su GitHub Pages (gratuita, già configurata)
+Il workflow `.github/workflows/pages.yml` ogni 30 minuti raccoglie notizie e dati, li traduce e (se ci sono chiavi AI) li analizza, genera il sito e lo pubblica su `https://<utente>.github.io/<repository>/`.
+
+**Attivazione (una volta):**
+1. Repository → **Settings → Pages → Build and deployment → Source: "GitHub Actions"**.
+2. (Consigliato) **Settings → Secrets and variables → Actions → New repository secret**: `COINGECKO_API_KEY`, `CONTACT_EMAIL`, `MYMEMORY_EMAIL` e almeno una chiave AI (`GEMINI_API_KEY` o `GROQ_API_KEY` hanno piani gratuiti; oppure `ANTHROPIC_API_KEY`). Facoltative: `FRED_API_KEY`, `ETHERSCAN_API_KEY`, `CMC_API_KEY`.
+3. **Actions → "Pubblica su GitHub Pages" → Run workflow** per la prima pubblicazione (poi parte da sola).
+
+**Requisiti di GitHub:** Pages da un repository **privato** richiede un piano a pagamento (GitHub Pro o superiore); con un repository pubblico è gratuito. I minuti di Actions sono illimitati per i repository pubblici; per quelli privati il piano gratuito include 2.000 minuti/mese (Pro 3.000): un aggiornamento dura circa 4–6 minuti, quindi con un repository privato conviene ridurre la frequenza (riga `cron` del workflow, es. `'7 */3 * * *'` = ogni 3 ore). Il sito pubblicato è comunque sempre visibile a chiunque abbia l'indirizzo. Nel codice non ci sono segreti: le chiavi stanno solo nei Secrets.
+
+**Cosa cambia rispetto all'app completa:**
+| Funzione | Versione statica |
+|---|---|
+| Notizie, sezioni, mercato, DeFi, Bitcoin, staking, meme, affidabilità | ✅ aggiornati ogni ~30 min (indicato in alto nella pagina) |
+| Prezzi principali | ✅ in tempo reale nel browser via Binance WebSocket (se raggiungibile) |
+| Grafici, ricerca, filtri, watchlist | ✅ nel browser (watchlist salvata sul dispositivo) |
+| Traduzione di pagina | ✅ diretta dal browser con MyMemory (quota gratuita per utente) |
+| Analisi AI | ✅ generate automaticamente per gli eventi principali; ❌ su richiesta |
+| Avvisi | ✅ controllati nel browser **solo mentre l'app è aperta**; ❌ push in background |
+| Archivio | ✅ ultimi 7 giorni consultabili (`STATIC_DAYS`) |
+| Pannello admin | ❌ — fonti in `src/lib/sources/catalog.ts`, chiavi nei Secrets, frequenza nel workflow |
+
+Prova in locale: `npm run ingest && NEXT_PUBLIC_BASE_PATH=/CryptoRadar npm run build:static` → cartella `out/`.
+
+### B) App completa con deploy automatico da GitHub
+Tutte le funzioni (admin, push in background, AI su richiesta, aggiornamento al minuto). Richiede un hosting Node sempre acceso:
+- **Render** (configurazione inclusa, `render.yaml`): Render → New → **Blueprint** → collega il repository GitHub → inserisci `ADMIN_PASSWORD` e le chiavi → ogni push su `main` aggiorna l'app. Piano Starter con disco persistente: circa 7 $/mese.
+- **Railway / Fly.io / VPS**: usa il `Dockerfile` incluso con un volume su `/app/data`.
+
+Il workflow `ci.yml` controlla tipi e build a ogni modifica.
+
 ## 2. Credenziali: quali servono, dove inserirle, come ottenerle
 
 Tutte vanno nel file `.env` sul server (mai nel frontend). Lo stato di ciascuna è visibile in **Admin → Configurazione**.

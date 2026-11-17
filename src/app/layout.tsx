@@ -7,14 +7,17 @@ import SearchBox from '@/components/SearchBox';
 import LangSwitch from '@/components/LangSwitch';
 import Bell from '@/components/Bell';
 import Pwa from '@/components/Pwa';
+import AlertEngine from '@/components/AlertEngine';
+import Ago from '@/components/Ago';
+import { STATIC, BUILD_TIME, UPDATE_EVERY_MIN, withBase } from '@/lib/mode';
 
 export const metadata: Metadata = {
   title: { default: 'Crypto Radar — Il mondo cripto, sotto controllo', template: '%s · Crypto Radar' },
   description: 'Centro di informazione e intelligence sul mondo delle criptovalute, della blockchain e della DeFi. Notizie tradotte in italiano, verificate e confrontate.',
-  manifest: '/manifest.webmanifest',
+  manifest: withBase('/manifest.webmanifest'),
   applicationName: 'Crypto Radar',
   appleWebApp: { capable: true, title: 'Crypto Radar', statusBarStyle: 'black-translucent' },
-  icons: { icon: '/icons/icon.svg', apple: '/icons/icon-192.png' },
+  icons: { icon: withBase('/icons/icon.svg'), apple: withBase('/icons/icon-192.png') },
 };
 export const viewport: Viewport = { themeColor: '#0b0d10', width: 'device-width', initialScale: 1 };
 
@@ -40,6 +43,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Nav />
           </header>
           <Pwa />
+          <AlertEngine />
+          {STATIC && BUILD_TIME && (
+            <div className="border-b border-line bg-info/10 px-4 py-1 text-center text-[11px] text-info">
+              Versione pubblicata su GitHub Pages · dati aggiornati <Ago iso={BUILD_TIME} /> (ogni ~{UPDATE_EVERY_MIN} min, non in tempo reale) · i prezzi principali sono live quando Binance è raggiungibile
+            </div>
+          )}
           <main className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">{children}</main>
           <footer className="mt-10 border-t border-line">
             <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 text-xs text-mute sm:grid-cols-3">

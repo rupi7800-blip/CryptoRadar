@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "ingest": "tsx --conditions=react-server scripts/ingest.ts",
+    "build:static": "node scripts/build-static.mjs"
   },
   "engines": {
     "node": ">=22.13"
@@ -31,6 +33,7 @@
     "autoprefixer": "^10.6.2",
     "postcss": "^8.5.33",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   }
 }

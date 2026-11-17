@@ -59,10 +59,10 @@ async function fetchCp(id: string): Promise<CoinDetail> {
   };
 }
 
-export async function coinDetail(id: string, src: string): Promise<{ data: CoinDetail | null; error: string | null; stale: boolean }> {
+export async function coinDetail(id: string, src: string, ttlMs = 10 * 60e3): Promise<{ data: CoinDetail | null; error: string | null; stale: boolean }> {
   const key = `coin:${src}:${id}`;
   const c = getCache<CoinDetail>(key);
-  if (c.value && c.fetchedAt && Date.now() - Date.parse(c.fetchedAt) < 10 * 60e3) return { data: c.value, error: null, stale: false };
+  if (c.value && c.fetchedAt && Date.now() - Date.parse(c.fetchedAt) < ttlMs) return { data: c.value, error: null, stale: false };
   try {
     let d: CoinDetail;
     if (src === 'coinpaprika') d = await fetchCp(id);
@@ -136,4 +136,26 @@ export async function searchCoins(q: string) {
 function dedupe<T extends { id: string }>(a: T[]) {
   const s = new Set<string>();
   return a.filter((x) => (s.has(x.id) ? false : (s.add(x.id), true)));
+}
+
+/** Scheda costruita dai soli dati di mercato (usata nella versione statica per le coin senza dettaglio in cache). */
+export function detailFromMarket(c: Coin): CoinDetail {
+  return {
+    id: c.id, src: c.idSource, name: c.name, symbol: c.symbol, image: c.image, rank: c.rank, description: null, categories: [], links: [], genesis: null, hashing: null,
+    market: { price: c.price, marketCap: c.marketCap, volume24h: c.volume24h, ch1h: c.ch1h, ch24h: c.ch24h, ch7d: c.ch7d, circulating: c.circulating, maxSupply: c.maxSupply, ath: c.ath, athDate: c.athDate, atl: c.atl, atlDate: c.atlDate, lastUpdated: c.lastUpdated },
+    developer: null, platforms: [], source: 'dati di mercato', fetchedAt: c.lastUpdated ?? new Date().toISOString(),
+  };
+}
+
+/** Versione statica: scarica in anticipo (con calma, cache 12 h) le schede delle prime coin e delle trending. */
+export async function prefetchCoinDetails(n = 20) {
+  const top = (getCache<Coin[]>('market:top').value ?? []).slice(0, n);
+  const tr = getCache<{ coins: { id: string }[] }>('market:trending').value?.coins ?? [];
+  const list: [string, string][] = [...top.map((c) => [c.id, c.idSource] as [string, string]), ...tr.slice(0, 7).map((c) => [c.id, 'coingecko'] as [string, string])];
+  let ok = 0;
+  for (const [id, src] of list) {
+    const r = await coinDetail(id, src === 'coinpaprika' ? 'coinpaprika' : 'coingecko', 12 * 3600e3);
+    if (r.data) ok++;
+  }
+  return ok;
 }

@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { STATIC, dataUrl } from '@/lib/mode';
 import { addWatch } from '@/lib/local';
 
@@ -23,7 +22,6 @@ export default function AddCoin() {
   const [res, setRes] = useState<R[]>([]);
   const [type, setType] = useState<'coin' | 'topic' | 'exchange' | 'project'>('coin');
   const [msg, setMsg] = useState<string | null>(null);
-  const router = useRouter();
   const search = async () => {
     if (type !== 'coin') return add({ id: q.trim().toLowerCase(), name: q.trim() } as R);
     if (STATIC) return setRes(await searchStatic(q));
@@ -35,7 +33,6 @@ export default function AddCoin() {
     const err = await addWatch({ type, id: c.id, label: c.name });
     setMsg(err ?? `Aggiunto: ${c.name}`);
     setRes([]); setQ('');
-    router.refresh();
   };
   return (
     <div className="p-4">

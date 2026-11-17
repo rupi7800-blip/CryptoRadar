@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Tabs from '@/components/Tabs';
 import { Card, PageHeader, Freshness, Empty, Disclaimer, Pct } from '@/components/ui';
 import { CoinTable } from '@/components/CoinTable';
 import { marketSnapshot, anomalies, rankings } from '@/lib/market/derived';
@@ -13,7 +14,6 @@ export default async function Mercato({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const { top, glob, fg } = marketSnapshot();
   const coins = top.value ?? [];
-  const page = Math.max(1, Math.min(5, Number(sp.page) || 1));
   const r = rankings(coins);
   const anom = anomalies();
   const interest = trendingTopics().rising.filter((x) => x.growth > 0);
@@ -42,9 +42,8 @@ export default async function Mercato({ searchParams }: { searchParams: Promise<
       <Card id="anomalie" title="Movimenti anomali" right={<span className="text-[10px] text-mute">soglie: ±5% in 1h, ±15% in 24h, volume/cap ≥ 60%, volume +60%, stablecoin fuori peg</span>}>
         {anom.length ? <ul className="divide-y divide-line">{anom.map((a) => <li key={a.coin.id} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm"><Link href={`/coin/${a.coin.id}?src=${a.coin.idSource}`} className="font-medium hover:underline">{a.coin.name}</Link><span className="text-xs text-mute">{a.coin.symbol} · #{a.coin.rank}</span><span className="text-xs text-warn">{a.reasons.join(' · ')}</span></li>)}</ul> : <Empty>Nessun movimento anomalo.</Empty>}
       </Card>
-      <Card title={`Classifica per capitalizzazione (${(page - 1) * 50 + 1}–${Math.min(page * 50, coins.length)} di ${coins.length})`}>
-        {coins.length ? <CoinTable coins={coins.slice((page - 1) * 50, page * 50)} /> : <Empty>Dati non disponibili. {top.error}</Empty>}
-        <div className="flex gap-1 border-t border-line px-4 py-2 text-sm">{[1, 2, 3, 4, 5].map((p) => <Link key={p} href={`/mercato?page=${p}`} className={`chip ${p === page ? 'border-accent/50 text-accent' : 'border-line text-mute'}`}>{p}</Link>)}</div>
+      <Card title={`Classifica per capitalizzazione (${coins.length})`}>
+        {coins.length ? <Tabs id="classifica" tabs={[0, 1, 2, 3, 4].filter((p) => p * 50 < coins.length).map((p) => `${p * 50 + 1}–${Math.min((p + 1) * 50, coins.length)}`)} panels={[0, 1, 2, 3, 4].filter((p) => p * 50 < coins.length).map((p) => <CoinTable key={p} coins={coins.slice(p * 50, (p + 1) * 50)} />)} /> : <Empty>Dati non disponibili. {top.error}</Empty>}
       </Card>
       <Disclaimer />
     </div>

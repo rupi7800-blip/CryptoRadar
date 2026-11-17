@@ -37,6 +37,8 @@ function ftsQuery(q: string) {
 }
 
 export function listNews(f: NewsFilter = {}): NewsItem[] {
+  // versione statica: solo le notizie le cui schede vengono pubblicate
+  if (process.env.STATIC_EXPORT === '1' && !f.from) f = { ...f, from: new Date(Date.now() - Number(process.env.STATIC_DAYS || 7) * 86400e3).toISOString() };
   const where: string[] = [];
   const params: unknown[] = [];
   if (f.section) { where.push("EXISTS (SELECT 1 FROM json_each(a.categories) WHERE value = ?)"); params.push(f.section); }

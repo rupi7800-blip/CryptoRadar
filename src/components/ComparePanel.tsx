@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { STATIC } from '@/lib/mode';
+import Ago from './Ago';
 
 type It = { id: number; title: string; original: string; source: string; author: string | null; at: string; ago: string; url: string; coins: string[]; cats: string[]; prediction: boolean };
 export default function ComparePanel({ items, aiEnabled }: { items: It[]; aiEnabled: boolean }) {
@@ -25,7 +26,7 @@ export default function ComparePanel({ items, aiEnabled }: { items: It[]; aiEnab
       {sel.length >= 2 && (
         <div className="sticky top-[150px] z-10 border-b border-line bg-panel2 p-3 text-sm">
           <div className="mb-2 font-semibold">Confronto di {sel.length} contributi</div>
-          <div className="grid gap-2 md:grid-cols-2">{chosen.map((c) => <div key={c.id} className="rounded border border-line p-2 text-xs"><b>{c.author ?? c.source}</b> ({c.source}, {c.ago}){c.prediction && <span className="ml-1 text-warn">[previsione]</span>}<div className="text-mute">{c.title}</div></div>)}</div>
+          <div className="grid gap-2 md:grid-cols-2">{chosen.map((c) => <div key={c.id} className="rounded border border-line p-2 text-xs"><b>{c.author ?? c.source}</b> ({c.source}, <Ago iso={c.at} />){c.prediction && <span className="ml-1 text-warn">[previsione]</span>}<div className="text-mute">{c.title}</div></div>)}</div>
           <div className="mt-2 flex gap-2">
             {aiEnabled && !STATIC ? <button className="btn btn-primary" onClick={compare} disabled={busy}>{busy ? 'Confronto…' : '✦ Confronta le posizioni con l\'AI'}</button> : <span className="text-xs text-mute">Confronto automatico AI non disponibile {STATIC ? '(versione statica: richiede l\'app con server)' : '(nessun modello configurato)'}: il confronto affiancato resta disponibile.</span>}
             <button className="btn" onClick={() => { setSel([]); setRes(null); }}>Azzera</button>
@@ -46,7 +47,7 @@ export default function ComparePanel({ items, aiEnabled }: { items: It[]; aiEnab
         <li key={n.id} className="flex gap-3 px-4 py-2.5 text-sm">
           <input type="checkbox" className="mt-1 h-4 w-4 accent-teal-500" checked={sel.includes(n.id)} onChange={() => toggle(n.id)} aria-label="Seleziona per confronto" />
           <div className="min-w-0 flex-1">
-            <div className="text-xs text-mute"><b className="text-ink">{n.author ?? n.source}</b> · {n.source} · {n.ago}{n.prediction && <span className="ml-1 chip border-warn/40 text-warn">previsione/opinione</span>}</div>
+            <div className="text-xs text-mute"><b className="text-ink">{n.author ?? n.source}</b> · {n.source} · <Ago iso={n.at} />{n.prediction && <span className="ml-1 chip border-warn/40 text-warn">previsione/opinione</span>}</div>
             <Link href={`/notizia/${n.id}`} className="font-medium hover:underline"><span className="t-it">{n.title}</span><span className="t-orig">{n.original}</span></Link>
             <div className="text-[11px] text-mute">{[...n.cats.filter((c) => c !== 'experts'), ...n.coins].slice(0, 5).join(' · ')} <a href={n.url} target="_blank" rel="noopener noreferrer nofollow" className="ml-1 text-accent">originale ↗</a></div>
           </div>

@@ -5,9 +5,17 @@ import { useEffect, useState, type ReactNode } from 'react';
 export default function Tabs({ id, tabs, panels, className = '' }: { id: string; tabs: string[]; panels: ReactNode[]; className?: string }) {
   const [i, setI] = useState(0);
   useEffect(() => {
-    const h = decodeURIComponent(location.hash.slice(1));
-    const k = tabs.findIndex((t) => `${id}-${t}` === h);
-    if (k >= 0) setI(k);
+    const sync = () => {
+      const h = decodeURIComponent(location.hash.slice(1));
+      const k = tabs.findIndex((t) => `${id}-${t}` === h);
+      if (k >= 0) {
+        setI(k);
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    sync();
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
   }, [id, tabs]);
   const pick = (k: number) => {
     setI(k);

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Ago from '@/components/Ago';
 import { notFound } from 'next/navigation';
-import { coinDetail } from '@/lib/market/detail';
+import { coinDetail, detailFromMarket, type CoinDetail } from '@/lib/market/detail';
 import { listNews } from '@/lib/news';
 import { Card, PageHeader, Pct, Disclaimer, Empty } from '@/components/ui';
 import { NewsList } from '@/components/NewsCard';
@@ -13,14 +13,29 @@ import type { Coin } from '@/lib/market/types';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateStaticParams() {
+  if (process.env.STATIC_EXPORT !== '1') return [];
+  const top = getCache<Coin[]>('market:top').value ?? [];
+  const tr = getCache<{ coins: { id: string }[] }>('market:trending').value?.coins ?? [];
+  return [...new Set([...top.map((c) => c.id), ...tr.map((c) => c.id), 'bitcoin', 'ethereum'])].filter((x) => /^[a-z0-9-]{1,80}$/i.test(x)).map((id) => ({ id }));
+}
+
 export default async function CoinPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string>> }) {
   const { id } = await params;
   const sp = await searchParams;
   if (!/^[a-z0-9-]{1,80}$/i.test(id)) notFound();
-  const src = sp.src === 'coinpaprika' ? 'coinpaprika' : 'coingecko';
-  const { data: d, error, stale } = await coinDetail(id, src);
-  // le notizie sono indicizzate con gli id della fonte di mercato attiva
   const top = getCache<Coin[]>('market:top').value ?? [];
+  const mk = top.find((c) => c.id === id);
+  const src = sp.src === 'coinpaprika' || (!sp.src && mk?.idSource === 'coinpaprika') ? 'coinpaprika' : 'coingecko';
+  let res: Awaited<ReturnType<typeof coinDetail>>;
+  if (process.env.STATIC_EXPORT === '1') {
+    // build statica: nessuna chiamata di rete, solo cache + dati di mercato aggiornati
+    const cached = getCache<CoinDetail>(`coin:${src}:${id}`).value;
+    const base = cached ?? (mk ? detailFromMarket(mk) : null);
+    if (base && mk) base.market = { ...base.market, ...detailFromMarket(mk).market, fdv: base.market.fdv, totalSupply: base.market.totalSupply, ch30d: base.market.ch30d, ch1y: base.market.ch1y };
+    res = { data: base, error: base ? null : 'scheda non disponibile nella versione statica', stale: false };
+  } else res = await coinDetail(id, src);
+  const { data: d, error, stale } = res;
   const newsIds = [id, ...(d ? top.filter((c) => c.symbol === d.symbol).map((c) => c.id) : [])];
   const news = [...new Map(newsIds.flatMap((x) => listNews({ coin: x, limit: 15 })).map((n) => [n.id, n])).values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, 15);
   if (!d) {
